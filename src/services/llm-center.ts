@@ -70,7 +70,7 @@ export class LLMCenter {
     const apiKey = this.getApiKey();
     if (!apiKey) throw new Error('API ключ не настроен');
     const apiUrl = this.settings.apiUrl || 'https://ask.chadgpt.ru/api/v1/chat/completions';
-    const model = (opts?.model && opts.model.trim()) || 'deepseek-v4-pro';
+    const model = opts?.model?.trim() || '';
     const temperature = opts?.temperature ?? 0.4;
 
     return this.retryWithBackoff(async () => {
@@ -82,7 +82,7 @@ export class LLMCenter {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model,
+          ...(model ? { model } : {}),
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: user },
@@ -152,10 +152,10 @@ export class LLMCenter {
     const apiKey = this.getApiKey();
     if (!apiKey) throw new Error('API ключ не настроен');
     const apiUrl = this.settings.apiUrl || 'https://ask.chadgpt.ru/api/v1/chat/completions';
-    const model = (opts?.model && opts.model.trim()) || 'deepseek-v4-pro';
+    const model = opts?.model?.trim() || '';
 
     const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [];
-    if (opts?.system) messages.push({ role: 'system', content: opts.system });
+    messages.push({ role: 'system', content: opts?.system || 'Ты — ассистент. Отвечай кратко и по делу.' });
     if (opts?.history) {
       for (const m of opts.history) {
         messages.push({ role: m.role, content: m.text });
@@ -168,7 +168,7 @@ export class LLMCenter {
     messages.push({ role: 'user', content: userPrompt });
 
     return this.retryWithBackoff(async () => {
-      const response = await requestUrl({
+      const response = await this.requestWithTimeout({
         url: apiUrl,
         method: 'POST',
         headers: {
@@ -176,7 +176,7 @@ export class LLMCenter {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model,
+          ...(model ? { model } : {}),
           messages,
           temperature: 0.3,
         }),

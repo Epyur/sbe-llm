@@ -31,13 +31,13 @@ export class LlmSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('API-ключ')
-      .setDesc('Секрет хранится защищённо (secretStorage Obsidian).')
+      .setDesc('Секрет хранится защищённо (secretStorage Obsidian). Пустое поле — без изменений.')
       .addText(text => {
         text.inputEl.type = 'password';
         text.setPlaceholder('sk-...');
         text
-          .setValue(this.plugin.llm.getApiKey() ?? '')
           .onChange((value) => {
+            if (!value) return;
             // Стабильный ID: перезаписываем один и тот же секрет, а не плодим sbe-llm-<ts> каждый раз.
             const secretName = 'sbe-llm-apikey';
             this.plugin.saveSecret(secretName, value);

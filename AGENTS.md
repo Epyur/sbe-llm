@@ -16,6 +16,13 @@
 
 ## История работ
 
+### 2026-08-17 — v0.1.2 (источник реестра)
+- `sbe-core`: `DEFAULT_REGISTRY_URL` → `https://epyur.fvds.ru/registry.json`
+  (raw.githubusercontent.com отдавал 429, реестр в ЦУП пропадал).
+- Пересборка `main.js`. Исходники не менялись.
+- Версия 0.1.1 → **0.1.2** (manifest + package.json).
+- `npx tsc --noEmit` EXIT=0; `npm run build` OK.
+
 ### 2026-08-15 — v0.1.1 (sbe-tasks)
 - Пересборка `main.js` после расширения sbe-core (`SbeYougileApi.client`,
   `SbeTasksApi`). Исходники не менялись.

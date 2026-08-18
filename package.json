@@ -1,6 +1,6 @@
 {
   "name": "sbe-llm",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "SBE LLM Center — центральный LLM-сервис",
   "main": "main.js",
   "scripts": {

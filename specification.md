@@ -16,6 +16,7 @@
 | `getStatus` | `() => { configured: boolean; apiUrl: string }` | Готовность: `configured` = задан ключ и непустой `apiUrl` |
 | `complete` | `(system: string, user: string, opts?: { model?: string; temperature?: number }) => Promise<string>` | Полный ответ текстом |
 | `completeJson` | `<T>(system: string, user: string, opts?...) => Promise<T>` | Ответ парсится как JSON (извлечение блока; при не-JSON — один повтор «Верни ТОЛЬКО JSON») |
+| `completeVision` | `(system: string, user: string, imageUrl: string, opts?: { model?: string; temperature?: number }) => Promise<string>` | Vision-запрос: изображение (data URL или http(s)-URL) передаётся в chat-формате OpenAI; только для vision-моделей |
 | `ask` | `(question: string, opts?: { system?: string; context?: string; history?: Array<{role:'user'\|'assistant'; text:string}>; model?: string }) => Promise<string>` | Диалог с контекстом и историей |
 
 ### Контракты и ограничения

@@ -10,9 +10,20 @@
 
 ## Структура
 
-- `src/services/llm-center.ts` — ядро: `complete`, `completeJson`, `ask`, ретраи с бэкффом (429/504, мин. интервал 2 с), клиентский таймаут 180 с (обёртка `requestWithTimeout` над `requestUrl` — у того нет таймаута), извлечение JSON из ответа с одним повтором при не-JSON.
+- `src/services/llm-center.ts` — ядро: `complete`, `completeVision`, `completeJson`, `ask`, ретраи с бэкффом (429/504, мин. интервал 2 с), клиентский таймаут 180 с (обёртка `requestWithTimeout` над `requestUrl` — у того нет таймаута), извлечение JSON из ответа с одним повтором при не-JSON.
 - `src/ui/settings-tab.ts` — настройки: URL API, API-ключ (password, секрет `sbe-llm-apikey`, стабильный ID — перезаписывается), проверка состояния.
 - `src/main.ts` — `SbeLlmPlugin`: публикует `SbeLlmApi`, читает секреты через `app.secretStorage`.
+
+## История работ
+
+### 2026-08-29 — v0.1.4 (completeVision)
+- `SbeLlmApi.completeVision(system, user, imageUrl, opts)` — vision-запрос: передаёт
+  изображение (data URL или http(s)-URL) в chat-формате OpenAI
+  (`content: [{type:"text"}, {type:"image_url"}]`). Работает только с vision-моделями
+  (например gpt-4o); текстовые модели и модели Image API chad (gemini-*-image, gpt-img-*)
+  вернут 400. Потребитель — sbe-photobank (ИИ-описание с реальными цветами/материалами).
+- Версия 0.1.3 → **0.1.4** (manifest + package.json). `npx tsc --noEmit` EXIT=0,
+  `npm run build` OK. Реестр: hashes sbe-llm добавлены, синхронизированы.
 
 ## История работ
 

@@ -62,6 +62,7 @@ export default class SbeLlmPlugin extends Plugin {
     return {
       getStatus: () => this.llm.getStatus(),
       complete: (system, user, opts) => this.llm.complete(system, user, opts),
+      completeVision: (system, user, imageUrl, opts) => this.llm.completeVision(system, user, imageUrl, opts),
       completeJson: (system, user, opts) => this.llm.completeJson(system, user, opts),
       ask: (question, opts) => this.llm.ask(question, opts),
     };

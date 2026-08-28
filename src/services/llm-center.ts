@@ -99,6 +99,54 @@ export class LLMCenter {
     });
   }
 
+  /** Vision-запрос: передаёт изображение (data URL или http(s)-URL) вместе с текстом.
+   *  Формат сообщения user — массив {type:"text"|"image_url"}. Работает только с
+   *  vision-моделями (например gpt-4o, gemini-*vision); обычные текстовые модели
+   *  вернут HTTP 400. */
+  async completeVision(
+    system: string,
+    user: string,
+    imageUrl: string,
+    opts?: { model?: string; temperature?: number },
+  ): Promise<string> {
+    const apiKey = this.getApiKey();
+    if (!apiKey) throw new Error('API ключ не настроен');
+    const apiUrl = this.settings.apiUrl || 'https://ask.chadgpt.ru/api/v1/chat/completions';
+    const model = opts?.model?.trim() || '';
+    const temperature = opts?.temperature ?? 0.4;
+
+    return this.retryWithBackoff(async () => {
+      const response = await this.requestWithTimeout({
+        url: apiUrl,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...(model ? { model } : {}),
+          messages: [
+            { role: 'system', content: system },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: user },
+                { type: 'image_url', image_url: { url: imageUrl } },
+              ],
+            },
+          ],
+          temperature,
+        }),
+      });
+
+      if (response.status === 429) throw new Error('429: Too Many Requests');
+      if (response.status !== 200) throw new Error(`HTTP ${response.status}: ${response.text}`);
+
+      const data: LLMResponse = JSON.parse(response.text);
+      return data.choices?.[0]?.message?.content || '';
+    });
+  }
+
   /** Выполняет HTTP-запрос с клиентским таймаутом.
    *  requestUrl в Obsidian не имеет таймаута — без этой обёртки при зависшем
    *  сервере (даже без 504) промис не завершается никогда. */

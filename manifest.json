@@ -1,7 +1,7 @@
 {
   "id": "sbe-llm",
   "name": "SBE LLM Center",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "minAppVersion": "1.11.4",
   "description": "Центральный LLM-сервис: единый API-ключ и URL для всех плагинов системы SBE.",
   "author": "Полищук Евгений (polishchuk@tn.ru)",

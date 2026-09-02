@@ -1,4 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type SbeLlmPlugin from '../main';
 
 export class LlmSettingsTab extends PluginSettingTab {
@@ -15,49 +16,78 @@ export class LlmSettingsTab extends PluginSettingTab {
     containerEl.createEl('h2', { text: 'SBE LLM Center' });
     containerEl.createEl('p', {
       cls: 'tn-muted',
-      text: 'Центральный LLM-сервис для всех плагинов системы SBE. Плагины-потребители (например, «Мастер презентаций») передают модель и промты самостоятельно.',
+      text: 'Центральный LLM-сервис для всех плагинов системы SBE. Плагины-потребители (например, «Мастер презентаций») передают модель и промты самостоятельно. '
+        + 'Ключ провайдера хранится на сервере, привязан к вашей почте — один раз настроенный здесь ключ автоматически доступен и в веб-версии.',
     });
 
     new Setting(containerEl)
-      .setName('URL API')
-      .setDesc('Адрес OpenAI-совместимого чат-эндпоинта.')
+      .setName('Адрес сервера')
+      .setDesc('Адрес стека SBE (не адрес провайдера ИИ).')
       .addText(text => text
-        .setPlaceholder('https://ask.chadgpt.ru/api/v1/chat/completions')
-        .setValue(this.plugin.settings.apiUrl)
+        .setPlaceholder('https://epyur.fvds.ru')
+        .setValue(this.plugin.settings.apiBase)
         .onChange(async (value) => {
-          this.plugin.settings.apiUrl = value.trim();
+          this.plugin.settings.apiBase = value.trim();
           await this.plugin.saveSettings();
         }));
 
     new Setting(containerEl)
-      .setName('API-ключ')
-      .setDesc('Секрет хранится защищённо (secretStorage Obsidian). Пустое поле — без изменений.')
+      .setName('API-ключ провайдера')
+      .setDesc('Ваш личный ключ (например, chadgpt.ru) — шифруется и хранится на сервере, привязан к вашей почте. Пустое поле при сохранении игнорируется.')
       .addText(text => {
         text.inputEl.type = 'password';
-        text.setPlaceholder('sk-...');
-        text
-          .onChange((value) => {
-            if (!value) return;
-            // Стабильный ID: перезаписываем один и тот же секрет, а не плодим sbe-llm-<ts> каждый раз.
-            const secretName = 'sbe-llm-apikey';
-            this.plugin.saveSecret(secretName, value);
-            this.plugin.settings.apiKeySecret = secretName;
-            void this.plugin.saveSettings();
-          });
+        text.setPlaceholder('chad-...');
         return text;
-      });
+      })
+      .addButton(btn => btn
+        .setButtonText('Сохранить')
+        .onClick(async () => {
+          const input = containerEl.querySelector('input[type="password"]') as HTMLInputElement | null;
+          const value = input?.value?.trim();
+          if (!value) {
+            new Notice('Введите ключ');
+            return;
+          }
+          btn.setDisabled(true);
+          try {
+            await this.plugin.llm.setApiKey(value);
+            new Notice('Ключ сохранён на сервере');
+            if (input) input.value = '';
+          } catch (e: unknown) {
+            new Notice(`Ошибка: ${errorMessage(e)}`);
+          } finally {
+            btn.setDisabled(false);
+          }
+        }));
 
     new Setting(containerEl)
       .setName('Состояние')
-      .setDesc('Проверка конфигурации сервиса.')
+      .setDesc('Проверка конфигурации на сервере.')
       .addButton(btn => btn
         .setButtonText('Проверить')
-        .onClick(() => {
-          const status = this.plugin.llm.getStatus();
-          if (status.configured) {
-            new Notice(`SBE LLM: настроен (${status.apiUrl})`);
-          } else {
-            new Notice('SBE LLM: API-ключ не задан');
+        .onClick(async () => {
+          btn.setDisabled(true);
+          try {
+            const status = await this.plugin.llm.getStatus();
+            new Notice(status.configured ? 'SBE LLM: ключ настроен' : 'SBE LLM: ключ не задан');
+          } catch (e: unknown) {
+            new Notice(`Ошибка: ${errorMessage(e)}`);
+          } finally {
+            btn.setDisabled(false);
+          }
+        }))
+      .addButton(btn => btn
+        .setButtonText('Удалить ключ')
+        .setWarning()
+        .onClick(async () => {
+          btn.setDisabled(true);
+          try {
+            await this.plugin.llm.deleteApiKey();
+            new Notice('Ключ удалён');
+          } catch (e: unknown) {
+            new Notice(`Ошибка: ${errorMessage(e)}`);
+          } finally {
+            btn.setDisabled(false);
           }
         }));
   }

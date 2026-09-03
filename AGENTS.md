@@ -1,7 +1,8 @@
 # AGENTS.md — sbe-llm (SBE LLM Center)
 
-Центральный LLM-сервис системы SBE: хранит только `apiUrl` и API-ключ (secretStorage).
-Модели, промты и контекст передаёт потребитель (например, `sbe-presentations`).
+Центральный LLM-сервис системы SBE: хранит только `apiBase` (адрес стека SBE). Ключ
+провайдера — на сервере (`llm-service`, ветка `backend`), зашифрован, привязан к email
+пользователя. Модели, промты и контекст передаёт потребитель (например, `sbe-presentations`).
 
 ## Публикация
 
@@ -10,11 +11,33 @@
 
 ## Структура
 
-- `src/services/llm-center.ts` — ядро: `complete`, `completeVision`, `completeJson`, `ask`, ретраи с бэкффом (429/504, мин. интервал 2 с), клиентский таймаут 180 с (обёртка `requestWithTimeout` над `requestUrl` — у того нет таймаута), извлечение JSON из ответа с одним повтором при не-JSON.
-- `src/ui/settings-tab.ts` — настройки: URL API, API-ключ (password, секрет `sbe-llm-apikey`, стабильный ID — перезаписывается), проверка состояния.
-- `src/main.ts` — `SbeLlmPlugin`: публикует `SbeLlmApi`, читает секреты через `app.secretStorage`.
+- `src/services/llm-center.ts` — ядро: `getStatus`/`setApiKey`/`deleteApiKey`/`listModels`
+  (управление ключом на сервере), `complete`, `completeVision`, `completeJson`, `ask`
+  (все — через `POST /api/llm/chat/completions`, ключ подставляет сервер), ретраи с
+  бэкффом (429/504, мин. интервал 2 с), клиентский таймаут 180 с (обёртка
+  `requestWithTimeout` над `requestUrl` — у того нет таймаута), извлечение JSON из
+  ответа с одним повтором при не-JSON.
+- `src/ui/settings-tab.ts` — настройки: URL стека, ввод/сохранение ключа провайдера на
+  сервере, проверка состояния (`GET /api/llm/settings`), удаление ключа.
+- `src/main.ts` — `SbeLlmPlugin`: публикует `SbeLlmApi`, JWT для `llm-service` через
+  `getService('sbe-apstore').auth.getToken('llm')` — ключ провайдера плагин не хранит.
+- `llm-service/` (ветка `backend`) — Go-бэкенд, полная история — `llm-service/AGENTS.md`
+  на ветке `backend`.
 
 ## История работ
+
+### 2026-09-02 — v0.1.4 → v0.1.5 (перенос из backend: серверное хранение ключа провайдера)
+
+Ключ провайдера ИИ убран из `app.secretStorage` плагина, хранится на сервере
+(`llm-service`, AES-256-GCM), привязан к email — настроенный один раз ключ
+доступен в любом плагине и в веб-портале. `SbeLlmApi.getStatus()` стал
+асинхронным (`Promise<{configured, apiUrl}>`) — единственное изменение
+публичного интерфейса; `sbe-photobank` (`ai-describe.service.ts`) поправлен под
+`await`. Новые эндпоинты: `GET/POST/DELETE /api/llm/settings`,
+`POST /api/llm/chat/completions`, `GET /api/llm/models`. `announceUpdate()`
+подключён. Полная история — `AGENTS.md`/`llm-service/AGENTS.md` ветки `backend`.
+
+- `npx tsc --noEmit` EXIT=0, `npm run build` OK. Версия 0.1.4 → **0.1.5**.
 
 ### 2026-08-29 — v0.1.4 (completeVision)
 - `SbeLlmApi.completeVision(system, user, imageUrl, opts)` — vision-запрос: передаёт
